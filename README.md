@@ -64,8 +64,15 @@ heic2jpg ./MyPhotos/
 | `--parallel <number>` | `-p` | Number of parallel threads to use (Default: CPU count) |
 | `--strip` | | Strip all metadata (EXIF) from the image |
 | `--keep-date` | | Preserve original file modification date |
+| `--update` | | Check for updates and install the latest version |
+| `--uninstall` | | Completely remove the application from your system |
 
 ### Examples
+
+**Update the tool to the latest version:**
+```bash
+heic2jpg --update
+```
 
 **Convert an entire folder using all CPU cores:**
 ```bash

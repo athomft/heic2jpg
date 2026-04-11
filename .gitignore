@@ -34,3 +34,7 @@ temp/
 
 # Compiled binaries (Upload to GitHub Releases instead)
 bin/
+
+# Bun temporary files
+*.bun-build
+.*.bun-build

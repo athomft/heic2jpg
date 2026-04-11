@@ -7,6 +7,8 @@ import { existsSync, statSync, readdirSync, readFileSync } from 'fs';
 import * as path from 'path';
 import { Worker } from 'worker_threads';
 import * as os from 'os';
+import * as https from 'https';
+import { execSync, spawn } from 'child_process';
 
 import pc from 'picocolors';
 
@@ -19,11 +21,14 @@ interface ProgramOptions {
   parallel: number;
   strip: boolean;
   keepDate: boolean;
+  update?: boolean;
+  uninstall?: boolean;
 }
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 const APP_NAME = 'heic2jpg';
 const DESCRIPTION = 'Advanced CLI tool to convert .HEIC images to .JPG';
+const GITHUB_REPO = 'athomft/HEIC2JPG';
 
 // Try to get the build timestamp from the build-info.json
 function getBuildTimestamp(): string {
@@ -33,16 +38,13 @@ function getBuildTimestamp(): string {
       const data = JSON.parse(readFileSync(buildInfoPath, 'utf8'));
       return data.timestamp || 'unknown';
     }
-  } catch (err) {
-    // Fallback if the file isn't there (e.g., during dev)
-  }
+  } catch (err) {}
   return 'not built yet';
 }
 
 async function getHeicFilesRecursive(dir: string): Promise<string[]> {
   let files: string[] = [];
   const entries = readdirSync(dir, { withFileTypes: true });
-
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
@@ -52,6 +54,84 @@ async function getHeicFilesRecursive(dir: string): Promise<string[]> {
     }
   }
   return files;
+}
+
+async function checkUpdate() {
+  console.log(pc.cyan('Checking for updates...'));
+  return new Promise<void>((resolve) => {
+    const options = {
+      hostname: 'api.github.com',
+      path: `/repos/${GITHUB_REPO}/releases/latest`,
+      headers: { 'User-Agent': 'heic2jpg-cli' }
+    };
+
+    https.get(options, (res) => {
+      let body = '';
+      res.on('data', (chunk) => body += chunk);
+      res.on('end', () => {
+        try {
+          const release = JSON.parse(body);
+          const latestVersion = release.tag_name.replace('v', '');
+          
+          if (latestVersion !== VERSION) {
+            console.log(pc.yellow(`\nA new version is available: ${pc.green('v' + latestVersion)} (current: v${VERSION})`));
+            const isWin = process.platform === 'win32';
+            const cmd = isWin 
+              ? `powershell -c "irm https://raw.githubusercontent.com/${GITHUB_REPO}/main/scripts/install.ps1 | iex"`
+              : `curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPO}/main/scripts/install.sh | sh`;
+            
+            console.log(pc.cyan('\nUpdating now...'));
+            try {
+              execSync(cmd, { stdio: 'inherit' });
+              console.log(pc.green('\nUpdate complete! Please restart your terminal.'));
+            } catch (err) {
+              console.error(pc.red('\nUpdate failed. Please run the installation command manually from README.'));
+            }
+          } else {
+            console.log(pc.green('You are already using the latest version.'));
+          }
+          resolve();
+        } catch (e) {
+          console.error(pc.red('Could not check for updates.'));
+          resolve();
+        }
+      });
+    }).on('error', () => {
+      console.error(pc.red('Network error while checking for updates.'));
+      resolve();
+    });
+  });
+}
+
+async function uninstall() {
+  const isWin = process.platform === 'win32';
+  console.log(pc.yellow('\nUninstalling heic2jpg...'));
+
+  if (isWin) {
+    const installDir = path.join(os.homedir(), '.heic2jpg');
+    console.log(pc.cyan(`Removing directory: ${installDir}`));
+    try {
+      // On Windows, we can't delete the EXE while it's running.
+      // We'll create a temporary batch file to delete it after we exit.
+      const batchPath = path.join(os.tmpdir(), 'uninstall-heic2jpg.bat');
+      const script = `@echo off\ntimeout /t 2 /nobreak > nul\nrmdir /s /q "${installDir}"\ndel "%~f0"`;
+      await fs.writeFile(batchPath, script);
+      spawn('cmd.exe', ['/c', batchPath], { detached: true, stdio: 'ignore' }).unref();
+      console.log(pc.green('\nSuccess! The application files will be removed in a few seconds.'));
+      console.log(pc.yellow('Note: You may still need to manually remove the folder from your PATH environment variable.'));
+    } catch (err) {
+      console.error(pc.red('Failed to trigger uninstallation.'));
+    }
+  } else {
+    try {
+      const binPath = '/usr/local/bin/heic2jpg';
+      execSync(`sudo rm ${binPath}`, { stdio: 'inherit' });
+      console.log(pc.green('\nSuccessfully uninstalled!'));
+    } catch (err) {
+      console.log(pc.red('\nFailed to uninstall. You might need sudo permissions.'));
+    }
+  }
+  process.exit(0);
 }
 
 const BANNER = `
@@ -70,7 +150,6 @@ async function convertHeic() {
 
   program
     .name(APP_NAME)
-
     .version(VERSION, '-v, --version')
     .usage('[options] [inputs...]')
     .helpOption('-h, --help', 'Display help for command')
@@ -87,29 +166,12 @@ async function convertHeic() {
         const argTerms = visibleArgs.map(arg => helper.argumentTerm(arg));
         const visibleOpts = helper.visibleOptions(cmd);
         const optTerms = visibleOpts.map(opt => helper.optionTerm(opt));
-
         const maxTermLength = Math.max(...argTerms.map(t => t.length), ...optTerms.map(t => t.length), 0);
         const pad = 2;
-
         const args = visibleArgs.map((arg, i) => `  ${pc.green((argTerms[i] || '').padEnd(maxTermLength + pad))} ${pc.white(helper.argumentDescription(arg))}`).join('\n');
         const options = visibleOpts.map((opt, i) => `  ${pc.green((optTerms[i] || '').padEnd(maxTermLength + pad))} ${pc.white(helper.optionDescription(opt))}`).join('\n');
 
-        return [
-          BANNER,
-          versionString,
-          '',
-          pc.white(DESCRIPTION),
-          '',
-          pc.yellow('Usage:'),
-          `  ${pc.white(usage)}`,
-          '',
-          pc.yellow('Arguments:'),
-          args,
-          '',
-          pc.yellow('Options:'),
-          options,
-          ''
-        ].join('\n');
+        return [BANNER, versionString, '', pc.white(DESCRIPTION), '', pc.yellow('Usage:'), `  ${pc.white(usage)}`, '', pc.yellow('Arguments:'), args, '', pc.yellow('Options:'), options, ''].join('\n');
       }
     })
     .argument('[inputs...]', 'Path to the input .HEIC file(s) or directories')
@@ -118,10 +180,20 @@ async function convertHeic() {
     .option('-r, --recursive', 'Recursively search for .HEIC files in directories', false)
     .option('-d, --delete', 'Delete the original .HEIC file after successful conversion', false)
     .option('-f, --force', 'Force overwrite if output file already exists', false)
-    .option('-p, --parallel <number>', 'Number of parallel threads to use', (val) => parseInt(val, 10), require('os').cpus().length)
+    .option('-p, --parallel <number>', 'Number of parallel threads to use', (val) => parseInt(val, 10), os.cpus().length)
     .option('--strip', 'Strip all metadata (EXIF) from the image', false)
     .option('--keep-date', 'Preserve original file modification date', false)
+    .option('--update', 'Check for updates and install the latest version', false)
+    .option('--uninstall', 'Completely remove the application from your system', false)
     .action(async (inputs: string[], options: ProgramOptions) => {
+      if (options.update) {
+        await checkUpdate();
+        return;
+      }
+      if (options.uninstall) {
+        await uninstall();
+        return;
+      }
       if (!inputs || inputs.length === 0) {
         program.help();
         return;
@@ -134,18 +206,13 @@ async function convertHeic() {
           console.error(`Error: File or directory not found: ${inputPath}`);
           continue;
         }
-
         const stat = statSync(inputPath);
         if (stat.isDirectory()) {
           if (options.recursive) {
             filesToProcess = filesToProcess.concat(await getHeicFilesRecursive(inputPath));
           } else {
             const entries = readdirSync(inputPath, { withFileTypes: true });
-            filesToProcess = filesToProcess.concat(
-              entries
-                .filter(e => e.isFile() && e.name.toLowerCase().endsWith('.heic'))
-                .map(e => path.join(inputPath, e.name))
-            );
+            filesToProcess = filesToProcess.concat(entries.filter(e => e.isFile() && e.name.toLowerCase().endsWith('.heic')).map(e => path.join(inputPath, e.name)));
           }
         } else if (stat.isFile() && inputPath.toLowerCase().endsWith('.heic')) {
           filesToProcess.push(inputPath);
@@ -166,7 +233,6 @@ async function convertHeic() {
       }
 
       console.log(`Processing ${filesToProcess.length} file(s) using ${options.parallel} thread(s)...`);
-
       const progressBar = new cliProgress.SingleBar({
         format: 'Progress |{bar}| {percentage}% | {value}/{total} Files | {file}',
         barCompleteChar: '\u2588',
@@ -175,19 +241,19 @@ async function convertHeic() {
       }, cliProgress.Presets.shades_classic);
 
       progressBar.start(filesToProcess.length, 0, { file: '' });
-
+      let convertedCount = 0;
+      let skippedCount = 0;
+      let errorCount = 0;
       let activeWorkers = 0;
       let currentIndex = 0;
+      const workerPath = path.resolve(__dirname, 'worker.js');
 
-      // Logic to handle inlined worker for standalone binary
+      // Logic to handle inlined worker
       const isStandalone = (process as any).isBun || (process as any).pkg || (process as any).sea;
       let workerSource: string | URL;
-
       if (typeof (global as any).INLINED_WORKER_CODE !== 'undefined') {
-        // Use Data URL to load the worker from the bundled string
         workerSource = new URL(`data:text/javascript;base64,${Buffer.from((global as any).INLINED_WORKER_CODE).toString('base64')}`);
       } else {
-        // Fallback to local file for development
         workerSource = path.resolve(__dirname, 'worker.js');
       }
 
@@ -207,7 +273,6 @@ async function convertHeic() {
 
           const inputPath = filesToProcess[currentIndex++]!;
           const parsedInput = path.parse(inputPath);
-          
           let outputPath: string;
           if (treatAsDirectory) {
             outputPath = outputBase ? path.join(outputBase, `${parsedInput.name}.jpg`) : path.join(parsedInput.dir, `${parsedInput.name}.jpg`);
@@ -224,15 +289,7 @@ async function convertHeic() {
 
           activeWorkers++;
           const worker = new Worker(workerSource, { eval: workerSource instanceof URL ? false : false });
-          
-          worker.postMessage({
-            inputPath,
-            outputPath,
-            quality: options.quality,
-            strip: options.strip,
-            keepDate: options.keepDate
-          });
-
+          worker.postMessage({ inputPath, outputPath, quality: options.quality, strip: options.strip, keepDate: options.keepDate });
           worker.on('message', async (msg) => {
             if (msg.status === 'success') {
               convertedCount++;
@@ -245,19 +302,15 @@ async function convertHeic() {
             worker.terminate();
             startWorker();
           });
-
-          worker.on('error', (err) => {
+          worker.on('error', () => {
             errorCount++;
             progressBar.increment(1, { file: parsedInput.base });
             activeWorkers--;
             worker.terminate();
             startWorker();
           });
-
-          // Start more workers if possible
           startWorker();
         };
-
         startWorker();
       });
     });
