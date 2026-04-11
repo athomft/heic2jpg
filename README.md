@@ -1,48 +1,42 @@
 # HEIC to JPG Converter CLI
 
-A powerful Node.js command-line tool to convert `.HEIC` images to `.JPG` format. Supports batch conversion, recursion, quality control, and more.
+A powerful Node.js command-line tool to convert `.HEIC` images to `.JPG` format. Supports batch conversion, recursion, quality control, parallel processing, and metadata management.
 
-## Prerequisites
+## 🚀 Quick Install (Standalone - No Node.js required)
 
-- [Node.js](https://nodejs.org/) (v14 or higher recommended)
+Install `heic2jpg` globally with a single command.
 
-## Installation
-
-1. Clone or download this project.
-2. Open your terminal in the project directory.
-3. Install the dependencies:
-   ```bash
-   npm install
-   ```
-4. Build the project:
-   ```bash
-   npm run build
-   ```
-
-## Development
-
-To run the TypeScript code directly during development:
-```bash
-npm run dev -- [options] <inputs...>
+### **Windows (PowerShell)**
+```powershell
+powershell -c "irm https://raw.githubusercontent.com/athomft/HEIC2JPG/main/scripts/install.ps1 | iex"
 ```
 
-## Global Command (Recommended)
+### **macOS / Linux**
+```bash
+curl -fsSL https://raw.githubusercontent.com/athomft/HEIC2JPG/main/scripts/install.sh | sh
+```
 
-To use `heic2jpg` from **any folder**, link it globally:
+---
 
-1. In the project directory, build and link:
+## 🛠️ Manual Installation (Requires Node.js)
+
+If you already have Node.js installed, you can install it manually:
+
+1. Clone or download this project.
+2. Install dependencies & build:
    ```bash
+   npm install
    npm run build
-   npm link
    ```
-2. Now, you can run:
+3. Link globally:
    ```bash
-   heic2jpg [options] <inputs...>
+   npm link
    ```
 
 ---
 
 ## Usage & Options
+
 
 You can run the tool using `node dist/app.js` or the global `heic2jpg` command. Since it uses absolute paths, you can point to files anywhere on your computer.
 ```bash
@@ -67,22 +61,25 @@ heic2jpg ./MyPhotos/
 | `--recursive` | `-r` | Search for .heic files in subfolders |
 | `--delete` | `-d` | Delete the original .heic file after successful conversion |
 | `--force` | `-f` | Overwrite existing .jpg files without asking |
+| `--parallel <number>` | `-p` | Number of parallel threads to use (Default: CPU count) |
+| `--strip` | | Strip all metadata (EXIF) from the image |
+| `--keep-date` | | Preserve original file modification date |
 
 ### Examples
 
-**Convert an entire folder and its subfolders:**
+**Convert an entire folder using all CPU cores:**
 ```bash
 heic2jpg ./TravelPhotos -r
 ```
 
-**Convert with 80% quality and delete originals:**
+**Convert with specific parallel threads and keep original date:**
 ```bash
-heic2jpg photo.heic -q 80 -d
+heic2jpg ./Photos -r -p 4 --keep-date
 ```
 
-**Convert multiple files into a specific directory:**
+**Convert with 80% quality and strip all metadata for privacy:**
 ```bash
-heic2jpg photo1.heic photo2.heic -o ./output_folder/
+heic2jpg photo.heic -q 80 --strip
 ```
 
 ## Troubleshooting

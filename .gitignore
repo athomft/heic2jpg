@@ -31,3 +31,6 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Compiled binaries (Upload to GitHub Releases instead)
+bin/
