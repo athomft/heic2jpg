@@ -87,8 +87,9 @@ heic2jpg photo1.heic photo2.heic -o ./output_folder/
 
 ## Troubleshooting
 
-- **"input buffer is not a HEIC image"**: The file is corrupted or not a real HEIC image.
-- **Skipped files**: By default, the tool won't overwrite existing files. Use `-f` to force overwrite.
+- **"input buffer is not a HEIC image"**: This means the file you're trying to convert isn't a valid `.heic` photo. Check that the file isn't corrupted and that it's actually a HEIC image (usually from an iPhone).
+- **Skipped files**: To protect your data, the tool **will not** overwrite an existing `.jpg` file by default. If you want to replace an existing JPG, add the `-f` (force) flag to your command.
+- **"Cannot find module... index.js"**: If you see this error after updating the app, simply run `npm link` again in the project folder to refresh the command.
 
 ## License
 MIT
