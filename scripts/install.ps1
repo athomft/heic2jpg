@@ -26,7 +26,7 @@ try {
     
     Invoke-WebRequest -Uri $DownloadUrl -OutFile $ExePath
 } catch {
-    Write-Error "Failed to download $AppName: $_"
+    Write-Error "Failed to download ${AppName}: $($_.Exception.Message)"
     exit 1
 }
 
