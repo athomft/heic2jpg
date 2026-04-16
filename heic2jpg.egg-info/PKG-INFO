@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: heic2jpg
-Version: 1.4.0
+Version: 1.5.0
 Summary: Advanced CLI tool to convert .HEIC images to .JPG
 License: MIT
 Classifier: Programming Language :: Python :: 3
@@ -17,17 +17,33 @@ Dynamic: license-file
 
 # HEIC to JPG Converter CLI
 
-A powerful Python command-line tool to convert `.HEIC` images to `.JPG` format. Supports batch conversion, recursion, quality control, parallel processing, and metadata management.
+A powerful command-line tool to convert `.HEIC` images to `.JPG` format. Supports batch conversion, recursion, quality control, parallel processing, and metadata management.
 
-## 🚀 Installation
+## 🚀 Quick Install (Standalone - No Python required)
 
-Ensure you have Python 3.8+ installed. You can install `heic2jpg` directly from the source directory using `pip`.
+Install `heic2jpg` globally with a single command.
 
-```bash
-pip install .
+### **Windows (PowerShell)**
+```powershell
+powershell -c "irm https://raw.githubusercontent.com/athomft/HEIC2JPG/main/scripts/install.ps1 | iex"
 ```
 
-This will install the necessary dependencies (`Pillow`, `pillow-heif`, `piexif`, `tqdm`) and register the `heic2jpg` command globally in your Python environment.
+### **macOS / Linux**
+```bash
+curl -fsSL https://raw.githubusercontent.com/athomft/HEIC2JPG/main/scripts/install.sh | sh
+```
+
+---
+
+## 🛠️ Manual Installation (Requires Python)
+
+If you have Python installed and want to install via `pip`:
+
+1. Clone or download this project.
+2. Install:
+   ```bash
+   pip install .
+   ```
 
 ---
 

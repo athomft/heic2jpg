@@ -16,7 +16,7 @@ except ImportError:
 # Register HEIF opener for Pillow
 register_heif_opener()
 
-VERSION = '1.5.0'
+VERSION = '1.5.1'
 APP_NAME = 'heic2jpg'
 DESCRIPTION = 'Advanced CLI tool to convert .HEIC images to .JPG'
 
