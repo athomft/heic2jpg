@@ -21,7 +21,7 @@ except ImportError:
 # Register HEIF opener for Pillow
 register_heif_opener()
 
-VERSION = '1.5.2'
+VERSION = '1.5.3'
 APP_NAME = 'heic2jpg'
 GITHUB_REPO = 'athomft/HEIC2JPG'
 DESCRIPTION = 'Advanced CLI tool to convert .HEIC images to .JPG'
@@ -151,10 +151,20 @@ def main():
     parser.add_argument('-p', '--parallel', type=int, default=os.cpu_count(), help='Number of parallel threads to use')
     parser.add_argument('--strip', action='store_true', help='Strip all metadata (EXIF) from the image')
     parser.add_argument('--keep-date', action='store_true', help='Preserve original file modification date')
+    parser.add_argument('--update', action='store_true', help='Check for updates and install the latest version')
+    parser.add_argument('--uninstall', action='store_true', help='Completely remove the application from your system')
     parser.add_argument('-v', '--version', action='version', version=f'{APP_NAME} {VERSION}')
     
     args = parser.parse_args()
     
+    if args.update:
+        check_update()
+        return
+        
+    if args.uninstall:
+        uninstall()
+        return
+
     if not args.inputs:
         parser.print_help()
         sys.exit(0)
