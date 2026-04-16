@@ -21,7 +21,7 @@ except ImportError:
 # Register HEIF opener for Pillow
 register_heif_opener()
 
-VERSION = '1.5.3'
+VERSION = '1.5.4'
 APP_NAME = 'heic2jpg'
 GITHUB_REPO = 'athomft/HEIC2JPG'
 DESCRIPTION = 'Advanced CLI tool to convert .HEIC images to .JPG'
@@ -75,7 +75,9 @@ def uninstall():
                     script = f'@echo off\ntimeout /t 2 /nobreak > nul\nrmdir /s /q "{install_dir}"\ndel "%~f0"'
                     f.write(script.encode())
                 
-                subprocess.Popen(['cmd.exe', '/c', batch_path], detached=True)
+                # Use creationflags for Windows to detach the process correctly
+                DETACHED_PROCESS = 0x00000008
+                subprocess.Popen(['cmd.exe', '/c', batch_path], creationflags=DETACHED_PROCESS, close_fds=True)
                 print("\nSuccess! The application files will be removed in a few seconds.")
                 print("Note: You may still need to manually remove the folder from your PATH environment variable.")
                 sys.exit(0)
