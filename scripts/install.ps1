@@ -1,36 +1,44 @@
-# installer for heic2jpg (Windows)
-# Usage: powershell -c "irm https://raw.githubusercontent.com/athomft/HEIC2JPG/main/scripts/install.ps1 | iex"
+$ErrorActionPreference = 'Stop'
 
-$installDir = "$HOME\.heic2jpg\bin"
-$exeName = "heic2jpg.exe"
-$exePath = "$installDir\$exeName"
-$githubUrl = "https://github.com/athomft/HEIC2JPG/releases/latest/download/heic2jpg-win-x64.exe"
+$Repo = "athomft/HEIC2JPG"
+$AppName = "heic2jpg"
+$InstallDir = "$HOME\.heic2jpg"
+$ExeName = "$AppName.exe"
+$ExePath = Join-Path $InstallDir $ExeName
 
-# 1. Create directory
-if (!(Test-Path $installDir)) {
-    Write-Host "📁 Creating installation directory: $installDir" -ForegroundColor Cyan
-    New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+# 1. Create install directory
+if (-not (Test-Path $InstallDir)) {
+    New-Item -ItemType Directory -Path $InstallDir | Out-Null
 }
 
-# 2. Download binary
-Write-Host "📥 Downloading heic2jpg..." -ForegroundColor Cyan
+# 2. Get latest release version and download URL
+Write-Host "Fetching latest version from GitHub..." -ForegroundColor Cyan
 try {
-    Invoke-WebRequest -Uri $githubUrl -OutFile $exePath
+    $Release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest"
+    $Asset = $Release.assets | Where-Object { $_.name -like "*windows*.exe" -or ($_.name -eq "$AppName.exe") } | Select-Object -First 1
+    
+    if (-not $Asset) {
+        throw "Could not find a Windows executable in the latest release."
+    }
+    
+    $DownloadUrl = $Asset.browser_download_url
+    Write-Host "Downloading $AppName v$($Release.tag_name)..." -ForegroundColor Green
+    
+    Invoke-WebRequest -Uri $DownloadUrl -OutFile $ExePath
 } catch {
-    Write-Error "❌ Failed to download binary. Please check the URL or your internet connection."
+    Write-Error "Failed to download $AppName: $_"
     exit 1
 }
 
-# 3. Add to PATH (User level)
-Write-Host "⚙️ Adding to system PATH..." -ForegroundColor Cyan
-$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($currentPath -notlike "*$installDir*") {
-    $newPath = "$currentPath;$installDir"
-    [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
-    Write-Host "✅ Successfully added to PATH." -ForegroundColor Green
-} else {
-    Write-Host "ℹ️ Already in PATH." -ForegroundColor Yellow
+# 3. Add to PATH if not already there
+$CurrentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($CurrentPath -notlike "*$InstallDir*") {
+    Write-Host "Adding $InstallDir to user PATH..." -ForegroundColor Cyan
+    $NewPath = "$CurrentPath;$InstallDir"
+    [Environment]::SetEnvironmentVariable("Path", $NewPath, "User")
+    $env:Path = "$env:Path;$InstallDir"
+    Write-Host "Success! You may need to restart your terminal for changes to take effect." -ForegroundColor Green
 }
 
-Write-Host "`n✨ heic2jpg has been installed successfully!" -ForegroundColor Green
-Write-Host "🚀 Restart your terminal and type 'heic2jpg' to start using it." -ForegroundColor Cyan
+Write-Host "`n$AppName has been installed to $InstallDir" -ForegroundColor Green
+Write-Host "Try running: $AppName --help" -ForegroundColor Yellow

@@ -1,32 +1,33 @@
+Metadata-Version: 2.4
+Name: heic2jpg
+Version: 1.4.0
+Summary: Advanced CLI tool to convert .HEIC images to .JPG
+License: MIT
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: Pillow>=10.0.0
+Requires-Dist: pillow-heif>=0.13.0
+Requires-Dist: piexif>=1.1.3
+Requires-Dist: tqdm>=4.66.0
+Dynamic: license-file
+
 # HEIC to JPG Converter CLI
 
-A powerful command-line tool to convert `.HEIC` images to `.JPG` format. Supports batch conversion, recursion, quality control, parallel processing, and metadata management.
+A powerful Python command-line tool to convert `.HEIC` images to `.JPG` format. Supports batch conversion, recursion, quality control, parallel processing, and metadata management.
 
-## 🚀 Quick Install (Standalone - No Python required)
+## 🚀 Installation
 
-Install `heic2jpg` globally with a single command.
+Ensure you have Python 3.8+ installed. You can install `heic2jpg` directly from the source directory using `pip`.
 
-### **Windows (PowerShell)**
-```powershell
-powershell -c "irm https://raw.githubusercontent.com/athomft/HEIC2JPG/main/scripts/install.ps1 | iex"
-```
-
-### **macOS / Linux**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/athomft/HEIC2JPG/main/scripts/install.sh | sh
+pip install .
 ```
 
----
-
-## 🛠️ Manual Installation (Requires Python)
-
-If you have Python installed and want to install via `pip`:
-
-1. Clone or download this project.
-2. Install:
-   ```bash
-   pip install .
-   ```
+This will install the necessary dependencies (`Pillow`, `pillow-heif`, `piexif`, `tqdm`) and register the `heic2jpg` command globally in your Python environment.
 
 ---
 
