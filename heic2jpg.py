@@ -1,6 +1,11 @@
 import argparse
 import os
 import sys
+import subprocess
+import json
+import shutil
+import tempfile
+import urllib.request
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -16,8 +21,9 @@ except ImportError:
 # Register HEIF opener for Pillow
 register_heif_opener()
 
-VERSION = '1.5.1'
+VERSION = '1.5.2'
 APP_NAME = 'heic2jpg'
+GITHUB_REPO = 'athomft/HEIC2JPG'
 DESCRIPTION = 'Advanced CLI tool to convert .HEIC images to .JPG'
 
 BANNER = r"""
@@ -28,6 +34,56 @@ BANNER = r"""
  | |  | | |____ _| || |____ / /| |__| | |    | |__| |
  |_|  |_|______|____\_____|____\____/|_|     \_____|
 """
+
+def check_update():
+    print("Checking for updates...")
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+        headers = {'User-Agent': 'heic2jpg-cli'}
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode())
+            latest_version = data['tag_name'].replace('v', '')
+            
+            if latest_version != VERSION:
+                print(f"\nA new version is available: v{latest_version} (current: v{VERSION})")
+                print("Updating now...")
+                
+                if sys.platform == 'win32':
+                    cmd = 'powershell -c "irm https://raw.githubusercontent.com/{0}/main/scripts/install.ps1 | iex"'.format(GITHUB_REPO)
+                    subprocess.run(cmd, shell=True)
+                else:
+                    cmd = 'curl -fsSL https://raw.githubusercontent.com/{0}/main/scripts/install.sh | sh'.format(GITHUB_REPO)
+                    subprocess.run(cmd, shell=True)
+                
+                print("\nUpdate complete! Please restart your terminal.")
+            else:
+                print("You are already using the latest version.")
+    except Exception as e:
+        print(f"Could not check for updates: {e}")
+
+def uninstall():
+    print("\nUninstalling heic2jpg...")
+    if sys.platform == 'win32':
+        install_dir = Path.home() / '.heic2jpg'
+        if install_dir.exists():
+            print(f"Removing directory: {install_dir}")
+            try:
+                # Create a batch file to delete the directory after we exit
+                with tempfile.NamedTemporaryFile(suffix='.bat', delete=False) as f:
+                    batch_path = f.name
+                    script = f'@echo off\ntimeout /t 2 /nobreak > nul\nrmdir /s /q "{install_dir}"\ndel "%~f0"'
+                    f.write(script.encode())
+                
+                subprocess.Popen(['cmd.exe', '/c', batch_path], detached=True)
+                print("\nSuccess! The application files will be removed in a few seconds.")
+                print("Note: You may still need to manually remove the folder from your PATH environment variable.")
+                sys.exit(0)
+            except Exception as e:
+                print(f"Failed to trigger uninstallation: {e}")
+    else:
+        print("To uninstall on macOS/Linux, please run: sudo rm /usr/local/bin/heic2jpg")
+    sys.exit(0)
 
 def process_file(input_path, output_path, quality, strip, keep_date, delete_original, force):
     try:
