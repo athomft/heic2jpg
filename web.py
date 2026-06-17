@@ -6,23 +6,19 @@ Usage:
     # or
     python web.py
 """
+
+import io
 import os
-import sys
 import tempfile
 import zipfile
-import io
 from pathlib import Path
 from typing import List
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.responses import Response, HTMLResponse
 import uvicorn
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import HTMLResponse, Response
 
-# Import the existing CLI conversion function
-sys.path.insert(0, str(Path(__file__).parent))
-from heic2jpg import register_heif_opener, process_file
-
-register_heif_opener()
+from converter import process_file
 
 app = FastAPI(
     title="HEIC to JPG Converter",
@@ -35,11 +31,18 @@ HERE = Path(__file__).parent
 
 def _convert_to_bytes(input_path, output_path, quality, strip):
     result = process_file(
-        input_path, output_path, quality, strip,
-        keep_date=False, delete_original=False, force=True,
+        input_path,
+        output_path,
+        quality,
+        strip,
+        keep_date=False,
+        delete_original=False,
+        force=True,
     )
     if result["status"] == "error":
-        raise HTTPException(status_code=500, detail=result.get("message", "Conversion failed"))
+        raise HTTPException(
+            status_code=500, detail=result.get("message", "Conversion failed")
+        )
     if not os.path.exists(output_path):
         raise HTTPException(status_code=500, detail="Output file was not created")
     with open(output_path, "rb") as f:
@@ -50,7 +53,9 @@ def _convert_to_bytes(input_path, output_path, quality, strip):
 async def index():
     html_path = HERE / "index.html"
     if not html_path.exists():
-        return HTMLResponse("<h1>HEIC to JPG Converter</h1><p>Frontend not found.</p>", status_code=500)
+        return HTMLResponse(
+            "<h1>HEIC to JPG Converter</h1><p>Frontend not found.</p>", status_code=500
+        )
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
@@ -63,7 +68,10 @@ async def convert_single(
     if not file.filename:
         raise HTTPException(400, "No file provided")
     if not file.filename.lower().endswith(".heic"):
-        raise HTTPException(400, f"Unsupported file type: {file.filename}. Only .HEIC files are supported.")
+        raise HTTPException(
+            400,
+            f"Unsupported file type: {file.filename}. Only .HEIC files are supported.",
+        )
     if not (0 <= quality <= 100):
         raise HTTPException(400, "Quality must be between 0 and 100")
 
@@ -105,13 +113,20 @@ async def convert_batch(
                 if not file.filename or not file.filename.lower().endswith(".heic"):
                     continue
                 tmp_in = os.path.join(tmp_dir, file.filename)
-                tmp_out = os.path.join(tmp_dir, file.filename.rsplit(".", 1)[0] + ".jpg")
+                tmp_out = os.path.join(
+                    tmp_dir, file.filename.rsplit(".", 1)[0] + ".jpg"
+                )
                 content = await file.read()
                 with open(tmp_in, "wb") as f:
                     f.write(content)
                 result = process_file(
-                    tmp_in, tmp_out, quality, strip,
-                    keep_date=False, delete_original=False, force=True,
+                    tmp_in,
+                    tmp_out,
+                    quality,
+                    strip,
+                    keep_date=False,
+                    delete_original=False,
+                    force=True,
                 )
                 if result["status"] == "success" and os.path.exists(tmp_out):
                     zf.write(tmp_out, os.path.basename(tmp_out))
