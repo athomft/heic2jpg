@@ -1,2 +1,0 @@
-[console_scripts]
-heic2jpg = heic2jpg:main
