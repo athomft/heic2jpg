@@ -1,6 +1,6 @@
-# HEIC to JPG Converter CLI
+# HEIC to JPG Converter
 
-A powerful command-line tool to convert `.HEIC` images to `.JPG` format. Supports batch conversion, recursion, quality control, parallel processing, and metadata management.
+A powerful tool to convert `.HEIC` images to `.JPG` format. Comes as both a **CLI tool** and a **web interface**. Supports batch conversion, recursion, quality control, parallel processing, and metadata management.
 
 ## 🚀 Quick Install (Standalone - No Python required)
 
@@ -30,7 +30,41 @@ If you have Python installed and want to install via `pip`:
 
 ---
 
-## Usage & Options
+## 🌐 Web Interface
+
+Run the web app to convert HEIC files through your browser.
+
+### Setup
+
+```bash
+pip install .[web]
+```
+
+### Usage
+
+```bash
+uvicorn web:app --reload
+```
+
+Then open **http://localhost:8000** in your browser.
+
+Or simply:
+```bash
+python web.py
+```
+
+### Features
+
+- Drag-and-drop file upload
+- Quality adjustment slider
+- Strip metadata option
+- Single file → direct JPG download
+- Multiple files → ZIP download
+- Automatic Swagger API docs at `/docs`
+
+---
+
+## CLI Usage & Options
 
 You can run the tool using the global `heic2jpg` command. Since it uses absolute paths, you can point to files anywhere on your computer.
 
