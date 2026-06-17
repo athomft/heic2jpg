@@ -8,12 +8,7 @@ version = "1.5.4"
 description = "Web tool to convert .HEIC images to .JPG"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "MIT"}
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
+license = "MIT"
 dependencies = [
     "Pillow>=10.0.0",
     "pillow-heif>=0.13.0",
@@ -25,3 +20,6 @@ dependencies = [
 
 [project.urls]
 Repository = "https://github.com/athomft/HEIC2JPG"
+
+[tool.setuptools]
+py-modules = ["converter", "web"]
