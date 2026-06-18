@@ -519,9 +519,11 @@
                 <div class="drop-zone" id="dropZone">
                     <span class="drop-icon" id="dropIcon">📁</span>
                     <div class="drop-text">
-                        <strong>Choose files</strong> or drag them here
+                        <strong>Choose files</strong> or drag and drop
                     </div>
-                    <div class="drop-hint">Only .HEIC files accepted</div>
+                    <div class="drop-hint">
+                        Tap to browse &middot; Only .HEIC files
+                    </div>
                     <input
                         type="file"
                         id="fileInput"
@@ -678,6 +680,9 @@
                         downloadLink.textContent = "Download JPG";
                         setStatus("Conversion complete", "success");
                         downloadLink.style.display = "block";
+                        setTimeout(function () {
+                            downloadLink.click();
+                        }, 100);
                     } else {
                         var fd = new FormData();
                         for (var i = 0; i < selectedFiles.length; i++) {
@@ -693,13 +698,124 @@
                             var err = await resp.text();
                             throw new Error(err);
                         }
-                        var blob = await resp.blob();
-                        var url = URL.createObjectURL(blob);
-                        downloadLink.href = url;
-                        downloadLink.download = "converted-images.zip";
-                        downloadLink.textContent = "Download ZIP";
-                        setStatus("Conversion complete", "success");
-                        downloadLink.style.display = "block";
+                        if (!resp.body) {
+                            throw new Error(
+                                "Streaming not supported by your browser",
+                            );
+                        }
+
+                        // Read SSE stream for real-time progress
+                        var reader = resp.body.getReader();
+                        var decoder = new TextDecoder();
+                        var buffer = "";
+                        var zipBase64 = "";
+                        var streamFailed = false;
+
+                        while (true) {
+                            var result = await reader.read();
+                            if (result.done) break;
+                            buffer += decoder.decode(result.value, {
+                                stream: true,
+                            });
+
+                            // Parse SSE events
+                            var parts = buffer.split("\n\n");
+                            buffer = parts.pop();
+
+                            for (var si = 0; si < parts.length; si++) {
+                                var lines = parts[si].split("\n");
+                                var eventType = "";
+                                var eventData = "";
+
+                                for (var j = 0; j < lines.length; j++) {
+                                    if (lines[j].startsWith("event: ")) {
+                                        eventType = lines[j].substring(7);
+                                    } else if (lines[j].startsWith("data: ")) {
+                                        eventData = lines[j].substring(6);
+                                    }
+                                }
+
+                                if (eventType === "progress" && eventData) {
+                                    var data = JSON.parse(eventData);
+                                    switch (data.status) {
+                                        case "converting":
+                                            status.textContent =
+                                                "Converting " +
+                                                data.file +
+                                                "...";
+                                            break;
+                                        case "done":
+                                            status.textContent =
+                                                "Converted " + data.file;
+                                            break;
+                                        case "skipped":
+                                            status.textContent =
+                                                "Skipped " +
+                                                data.file +
+                                                " (" +
+                                                (data.reason || "not HEIC") +
+                                                ")";
+                                            break;
+                                        case "error":
+                                            status.textContent =
+                                                "Error on " +
+                                                data.file +
+                                                " - " +
+                                                (data.message || "unknown");
+                                            break;
+                                    }
+                                } else if (eventType === "summary") {
+                                    var data = JSON.parse(eventData);
+                                    var summaryMsg =
+                                        data.converted + " converted";
+                                    if (data.skipped > 0) {
+                                        summaryMsg +=
+                                            ", " + data.skipped + " skipped";
+                                    }
+                                    setStatus(
+                                        summaryMsg,
+                                        data.converted > 0
+                                            ? "success"
+                                            : "error",
+                                    );
+                                } else if (eventType === "download") {
+                                    zipBase64 = eventData;
+                                } else if (eventType === "error") {
+                                    var data = JSON.parse(eventData);
+                                    setStatus(
+                                        "Error: " + data.message,
+                                        "error",
+                                    );
+                                    streamFailed = true;
+                                    break;
+                                }
+                            }
+                            if (streamFailed) break;
+                        }
+
+                        if (!streamFailed && zipBase64) {
+                            // Decode base64 to binary blob
+                            var binaryStr = atob(zipBase64);
+                            var bytes = new Uint8Array(binaryStr.length);
+                            for (var i = 0; i < binaryStr.length; i++) {
+                                bytes[i] = binaryStr.charCodeAt(i);
+                            }
+                            var blob = new Blob([bytes], {
+                                type: "application/zip",
+                            });
+                            var url = URL.createObjectURL(blob);
+                            downloadLink.href = url;
+                            downloadLink.download = "converted-images.zip";
+                            downloadLink.textContent =
+                                "Download ZIP (" +
+                                selectedFiles.length +
+                                " files)";
+                            setStatus("Conversion complete", "success");
+                            downloadLink.style.display = "block";
+                            setTimeout(function () {
+                                downloadLink.click();
+                            }, 100);
+                        }
                     }
                 } catch (err) {
                     setStatus("Error: " + err.message, "error");

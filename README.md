@@ -23,11 +23,26 @@ python web.py
 - Strip metadata option
 - Single file → direct JPG download
 - Multiple files → ZIP download
+- Real-time batch conversion progress
 - Automatic Swagger API docs at `/docs`
 - Rate limiting (10 req/min per IP)
-- File size limit (50 MB)
-- Conversion timeout (120s)
+- File size limit (50 MB, configurable)
+- Conversion timeout (120s, configurable)
 - Health check endpoint (`/health`)
+
+## Configuration
+
+These environment variables can be set to customize behavior:
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `MAX_FILE_SIZE` | `52428800` (50 MB) | Maximum allowed file size in bytes |
+| `CONVERSION_TIMEOUT` | `120` | Maximum conversion time per file in seconds |
+
+Example:
+```bash
+MAX_FILE_SIZE=104857600 CONVERSION_TIMEOUT=300 uvicorn web:app --reload
+```
 
 ## API Endpoints
 
