@@ -1,222 +1,713 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HEIC to JPG</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=ABeeZee:ital@0;1&display=swap" rel="stylesheet" />
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: "ABeeZee", -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #e8ecf2;
-            color: #1d1d1f;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem 1rem;
-            overflow-x: hidden;
-            position: relative;
-        }
-        .bg-blob {
-            position: fixed; border-radius: 50%; filter: blur(100px);
-            opacity: 0.35; z-index: 0; pointer-events: none; will-change: transform;
-        }
-        .bg-blob-1 { width: 600px; height: 600px; background: radial-gradient(circle, #007aff, #5856d6); top: -200px; right: -150px; animation: blobFloat 14s ease-in-out infinite alternate; }
-        .bg-blob-2 { width: 500px; height: 500px; background: radial-gradient(circle, #ff2d55, #ff9500); bottom: -180px; left: -120px; animation: blobFloat 18s ease-in-out infinite alternate-reverse; }
-        .bg-blob-3 { width: 350px; height: 350px; background: radial-gradient(circle, #34c759, #30d158); top: 40%; left: -80px; animation: blobFloat 16s ease-in-out infinite alternate; }
-        .bg-blob-4 { width: 400px; height: 400px; background: radial-gradient(circle, #ff2d55, #ff375f); bottom: 10%; right: -100px; animation: blobFloat 20s ease-in-out infinite alternate-reverse; }
-        @keyframes blobFloat {
-            0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
-            25%  { transform: translate(40px, -50px) scale(1.08) rotate(3deg); }
-            50%  { transform: translate(-30px, 40px) scale(0.92) rotate(-2deg); }
-            75%  { transform: translate(20px, 30px) scale(1.04) rotate(1deg); }
-            100% { transform: translate(-40px, -20px) scale(0.96) rotate(-3deg); }
-        }
-        .noise { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px 256px; }
-        .container { position: relative; z-index: 1; width: 100%; max-width: 480px; }
-        .card { position: relative; background: rgba(255, 255, 255, 0.48); backdrop-filter: blur(50px) saturate(1.6); -webkit-backdrop-filter: blur(50px) saturate(1.6); border-radius: 32px; padding: 2.5rem 2rem 2rem; box-shadow: 0 12px 48px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.45); isolation: isolate; overflow: hidden; }
-        .card::before { content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.25) 0%, transparent 60%); pointer-events: none; z-index: -1; }
-        .card::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent); pointer-events: none; }
-        .header { text-align: center; margin-bottom: 2rem; }
-        .icon-wrap { width: 68px; height: 68px; margin: 0 auto 1rem; background: linear-gradient(135deg, #007aff, #5856d6); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 8px 28px rgba(0, 122, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3); position: relative; overflow: hidden; }
-        .icon-wrap::after { content: ""; position: absolute; top: -30%; left: -30%; width: 80%; height: 60%; background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, transparent 60%); border-radius: 50%; transform: rotate(-30deg); }
-        h1 { font-family: "ABeeZee", sans-serif; font-size: 1.7rem; font-weight: 400; letter-spacing: -0.01em; color: #1d1d1f; }
-        .subtitle { font-family: "ABeeZee", sans-serif; font-size: 0.9rem; color: #8e8e93; margin-top: 0.2rem; font-style: italic; }
-        .drop-zone { border: 2px dashed rgba(0, 0, 0, 0.08); border-radius: 20px; padding: 2.4rem 1.5rem; text-align: center; cursor: pointer; transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94); position: relative; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-        .drop-zone:hover { border-color: #007aff; background: rgba(0, 122, 255, 0.06); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 122, 255, 0.08); }
-        .drop-zone.dragover { border-color: #007aff; background: rgba(0, 122, 255, 0.1); transform: scale(1.015); box-shadow: 0 8px 32px rgba(0, 122, 255, 0.12); }
-        .drop-zone.has-files { border-color: #34c759; background: rgba(52, 199, 89, 0.06); }
-        .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-        .drop-icon { font-size: 3rem; margin-bottom: 0.6rem; display: block; transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .drop-zone:hover .drop-icon { transform: translateY(-6px) scale(1.05); }
-        .drop-text { color: #8e8e93; font-size: 0.95rem; font-family: "ABeeZee", sans-serif; }
-        .drop-text strong { color: #007aff; font-weight: 400; }
-        .drop-hint { font-size: 0.78rem; color: #aeaeb2; margin-top: 0.4rem; font-family: "ABeeZee", sans-serif; }
-        .file-list { margin-top: 1rem; list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
-        .file-list li { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.9rem; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border-radius: 14px; font-size: 0.85rem; word-break: break-all; animation: slideIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); border: 1px solid rgba(255, 255, 255, 0.4); font-family: "ABeeZee", sans-serif; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .file-list li .file-name { display: flex; align-items: center; gap: 0.5rem; }
-        .file-list li .file-name::before { content: "🖼"; font-size: 0.9rem; }
-        .file-list li .remove { color: #ff3b30; cursor: pointer; font-weight: 400; font-size: 1.2rem; padding: 0 0.2rem; opacity: 0.5; transition: opacity 0.2s; flex-shrink: 0; font-family: "ABeeZee", sans-serif; }
-        .file-list li .remove:hover { opacity: 1; }
-        .options { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; }
-        .quality-group { display: flex; align-items: center; gap: 0.7rem; flex: 1; min-width: 160px; }
-        .quality-group label { font-size: 0.85rem; color: #8e8e93; font-family: "ABeeZee", sans-serif; white-space: nowrap; }
-        .quality-group input[type="range"] { -webkit-appearance: none; appearance: none; flex: 1; height: 4px; border-radius: 2px; background: rgba(0, 0, 0, 0.1); outline: none; }
-        .quality-group input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #007aff; cursor: pointer; box-shadow: 0 2px 10px rgba(0, 122, 255, 0.35); border: 2px solid rgba(255, 255, 255, 0.5); }
-        .quality-group input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-        .quality-group input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; background: #007aff; cursor: pointer; box-shadow: 0 2px 10px rgba(0, 122, 255, 0.35); }
-        .quality-value { font-family: "ABeeZee", sans-serif; font-size: 0.9rem; min-width: 2.2rem; text-align: right; color: #1d1d1f; }
-        .strip-label { font-size: 0.85rem; color: #8e8e93; display: flex; align-items: center; gap: 0.45rem; cursor: pointer; font-family: "ABeeZee", sans-serif; }
-        .strip-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: #007aff; cursor: pointer; }
-        .btn { display: block; width: 100%; margin-top: 1.25rem; padding: 0.9rem; border: none; border-radius: 16px; font-size: 1rem; font-weight: 400; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); font-family: "ABeeZee", sans-serif; position: relative; overflow: hidden; }
-        .btn::after { content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 60%); pointer-events: none; }
-        .btn-primary { background: linear-gradient(135deg, #007aff, #5856d6); color: #fff; box-shadow: 0 6px 24px rgba(0, 122, 255, 0.3); }
-        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0, 122, 255, 0.35); }
-        .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
-        .btn-download { background: linear-gradient(135deg, #34c759, #30d158); color: #fff; box-shadow: 0 6px 24px rgba(52, 199, 89, 0.3); display: none; }
-        .btn-download:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(52, 199, 89, 0.35); }
-        .status-area { margin-top: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.7rem; min-height: 2rem; }
-        .status { font-size: 0.88rem; color: #8e8e93; text-align: center; font-family: "ABeeZee", sans-serif; }
-        .status.error { color: #ff3b30; }
-        .status.success { color: #34c759; }
-        .spinner { display: none; width: 22px; height: 22px; border: 2.5px solid rgba(0, 122, 255, 0.12); border-top-color: #007aff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .footer { margin-top: 1.5rem; font-size: 0.78rem; color: #aeaeb2; text-align: center; font-family: "ABeeZee", sans-serif; }
-        .footer a { color: #007aff; text-decoration: none; }
-        .footer a:hover { text-decoration: underline; }
-        @media (max-width: 480px) {
-            body { padding: 1rem; justify-content: flex-start; padding-top: 2.5rem; }
-            .card { padding: 1.5rem 1.25rem 1.25rem; border-radius: 24px; }
-            .options { flex-direction: column; gap: 0.75rem; align-items: stretch; }
-            .quality-group { min-width: unset; }
-            .bg-blob-1 { width: 300px; height: 300px; top: -100px; right: -80px; }
-            .bg-blob-2 { width: 250px; height: 250px; }
-            .bg-blob-3 { width: 200px; height: 200px; left: -60px; }
-            .bg-blob-4 { width: 200px; height: 200px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="bg-blob bg-blob-1"></div>
-    <div class="bg-blob bg-blob-2"></div>
-    <div class="bg-blob bg-blob-3"></div>
-    <div class="bg-blob bg-blob-4"></div>
-    <div class="noise"></div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>HEIC to JPG</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=ABeeZee:ital@0;1&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family:
+                    "ABeeZee",
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    sans-serif;
+                background: #e8ecf2;
+                color: #1d1d1f;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem 1rem;
+                overflow-x: hidden;
+                position: relative;
+            }
+            .bg-blob {
+                position: fixed;
+                border-radius: 50%;
+                filter: blur(100px);
+                opacity: 0.35;
+                z-index: 0;
+                pointer-events: none;
+                will-change: transform;
+            }
+            .bg-blob-1 {
+                width: 600px;
+                height: 600px;
+                background: radial-gradient(circle, #007aff, #5856d6);
+                top: -200px;
+                right: -150px;
+                animation: blobFloat 14s ease-in-out infinite alternate;
+            }
+            .bg-blob-2 {
+                width: 500px;
+                height: 500px;
+                background: radial-gradient(circle, #ff2d55, #ff9500);
+                bottom: -180px;
+                left: -120px;
+                animation: blobFloat 18s ease-in-out infinite alternate-reverse;
+            }
+            .bg-blob-3 {
+                width: 350px;
+                height: 350px;
+                background: radial-gradient(circle, #34c759, #30d158);
+                top: 40%;
+                left: -80px;
+                animation: blobFloat 16s ease-in-out infinite alternate;
+            }
+            .bg-blob-4 {
+                width: 400px;
+                height: 400px;
+                background: radial-gradient(circle, #ff2d55, #ff375f);
+                bottom: 10%;
+                right: -100px;
+                animation: blobFloat 20s ease-in-out infinite alternate-reverse;
+            }
+            @keyframes blobFloat {
+                0% {
+                    transform: translate(0, 0) scale(1) rotate(0deg);
+                }
+                25% {
+                    transform: translate(40px, -50px) scale(1.08) rotate(3deg);
+                }
+                50% {
+                    transform: translate(-30px, 40px) scale(0.92) rotate(-2deg);
+                }
+                75% {
+                    transform: translate(20px, 30px) scale(1.04) rotate(1deg);
+                }
+                100% {
+                    transform: translate(-40px, -20px) scale(0.96) rotate(-3deg);
+                }
+            }
+            .noise {
+                position: fixed;
+                inset: 0;
+                z-index: 0;
+                pointer-events: none;
+                opacity: 0.03;
+                background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+                background-repeat: repeat;
+                background-size: 256px 256px;
+            }
+            .container {
+                position: relative;
+                z-index: 1;
+                width: 100%;
+                max-width: 480px;
+            }
+            .card {
+                position: relative;
+                background: rgba(255, 255, 255, 0.48);
+                backdrop-filter: blur(50px) saturate(1.6);
+                -webkit-backdrop-filter: blur(50px) saturate(1.6);
+                border-radius: 32px;
+                padding: 2.5rem 2rem 2rem;
+                box-shadow:
+                    0 12px 48px rgba(0, 0, 0, 0.06),
+                    0 4px 16px rgba(0, 0, 0, 0.03),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+                border: 1px solid rgba(255, 255, 255, 0.45);
+                isolation: isolate;
+                overflow: hidden;
+            }
+            .card::before {
+                content: "";
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(
+                    ellipse at 30% 20%,
+                    rgba(255, 255, 255, 0.25) 0%,
+                    transparent 60%
+                );
+                pointer-events: none;
+                z-index: -1;
+            }
+            .card::after {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.6),
+                    transparent
+                );
+                pointer-events: none;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 2rem;
+            }
 
-    <div class="container">
-        <div class="card">
-            <div class="header">
-                <div class="icon-wrap">🖼</div>
-                <h1>HEIC to JPG</h1>
-                <p class="subtitle">Convert iPhone photos in seconds</p>
-            </div>
+            h1 {
+                font-family: "ABeeZee", sans-serif;
+                font-size: 1.7rem;
+                font-weight: 400;
+                letter-spacing: -0.01em;
+                color: #1d1d1f;
+            }
+            .subtitle {
+                font-family: "ABeeZee", sans-serif;
+                font-size: 0.9rem;
+                color: #8e8e93;
+                margin-top: 0.2rem;
+                font-style: italic;
+            }
+            .drop-zone {
+                border: 2px dashed rgba(0, 0, 0, 0.08);
+                border-radius: 20px;
+                padding: 2.4rem 1.5rem;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                position: relative;
+                background: rgba(255, 255, 255, 0.25);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
+            .drop-zone:hover {
+                border-color: #007aff;
+                background: rgba(0, 122, 255, 0.06);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(0, 122, 255, 0.08);
+            }
+            .drop-zone.dragover {
+                border-color: #007aff;
+                background: rgba(0, 122, 255, 0.1);
+                transform: scale(1.015);
+                box-shadow: 0 8px 32px rgba(0, 122, 255, 0.12);
+            }
+            .drop-zone.has-files {
+                border-color: #34c759;
+                background: rgba(52, 199, 89, 0.06);
+            }
+            .drop-zone input[type="file"] {
+                position: absolute;
+                inset: 0;
+                opacity: 0;
+                cursor: pointer;
+            }
+            .drop-icon {
+                font-size: 3rem;
+                margin-bottom: 0.6rem;
+                display: block;
+                transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            }
+            .drop-zone:hover .drop-icon {
+                transform: translateY(-6px) scale(1.05);
+            }
+            .drop-text {
+                color: #8e8e93;
+                font-size: 0.95rem;
+                font-family: "ABeeZee", sans-serif;
+            }
+            .drop-text strong {
+                color: #007aff;
+                font-weight: 400;
+            }
+            .drop-hint {
+                font-size: 0.78rem;
+                color: #aeaeb2;
+                margin-top: 0.4rem;
+                font-family: "ABeeZee", sans-serif;
+            }
+            .file-list {
+                margin-top: 1rem;
+                list-style: none;
+                display: flex;
+                flex-direction: column;
+                gap: 0.4rem;
+            }
+            .file-list li {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0.65rem 0.9rem;
+                background: rgba(255, 255, 255, 0.5);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+                border-radius: 14px;
+                font-size: 0.85rem;
+                word-break: break-all;
+                animation: slideIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                border: 1px solid rgba(255, 255, 255, 0.4);
+                font-family: "ABeeZee", sans-serif;
+            }
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-12px) scale(0.97);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+            .file-list li .file-name {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .file-list li .file-name::before {
+                content: "🖼";
+                font-size: 0.9rem;
+            }
+            .file-list li .remove {
+                color: #ff3b30;
+                cursor: pointer;
+                font-weight: 400;
+                font-size: 1.2rem;
+                padding: 0 0.2rem;
+                opacity: 0.5;
+                transition: opacity 0.2s;
+                flex-shrink: 0;
+                font-family: "ABeeZee", sans-serif;
+            }
+            .file-list li .remove:hover {
+                opacity: 1;
+            }
+            .options {
+                margin-top: 1.25rem;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1.25rem;
+                align-items: center;
+            }
+            .quality-group {
+                display: flex;
+                align-items: center;
+                gap: 0.7rem;
+                flex: 1;
+                min-width: 160px;
+            }
+            .quality-group label {
+                font-size: 0.85rem;
+                color: #8e8e93;
+                font-family: "ABeeZee", sans-serif;
+                white-space: nowrap;
+            }
+            .quality-group input[type="range"] {
+                -webkit-appearance: none;
+                appearance: none;
+                flex: 1;
+                height: 4px;
+                border-radius: 2px;
+                background: rgba(0, 0, 0, 0.1);
+                outline: none;
+            }
+            .quality-group input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: #007aff;
+                cursor: pointer;
+                box-shadow: 0 2px 10px rgba(0, 122, 255, 0.35);
+                border: 2px solid rgba(255, 255, 255, 0.5);
+            }
+            .quality-group input[type="range"]::-webkit-slider-thumb:hover {
+                transform: scale(1.2);
+            }
+            .quality-group input[type="range"]::-moz-range-thumb {
+                width: 20px;
+                height: 20px;
+                border: 2px solid rgba(255, 255, 255, 0.5);
+                border-radius: 50%;
+                background: #007aff;
+                cursor: pointer;
+                box-shadow: 0 2px 10px rgba(0, 122, 255, 0.35);
+            }
+            .quality-value {
+                font-family: "ABeeZee", sans-serif;
+                font-size: 0.9rem;
+                min-width: 2.2rem;
+                text-align: right;
+                color: #1d1d1f;
+            }
+            .strip-label {
+                font-size: 0.85rem;
+                color: #8e8e93;
+                display: flex;
+                align-items: center;
+                gap: 0.45rem;
+                cursor: pointer;
+                font-family: "ABeeZee", sans-serif;
+            }
+            .strip-label input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                accent-color: #007aff;
+                cursor: pointer;
+            }
+            .btn {
+                display: block;
+                width: 100%;
+                margin-top: 1.25rem;
+                padding: 0.9rem;
+                border: none;
+                border-radius: 16px;
+                font-size: 1rem;
+                font-weight: 400;
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                font-family: "ABeeZee", sans-serif;
+                position: relative;
+                overflow: hidden;
+            }
+            .btn::after {
+                content: "";
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(
+                    ellipse at 30% 20%,
+                    rgba(255, 255, 255, 0.15) 0%,
+                    transparent 60%
+                );
+                pointer-events: none;
+            }
+            .btn-primary {
+                background: linear-gradient(135deg, #007aff, #5856d6);
+                color: #fff;
+                box-shadow: 0 6px 24px rgba(0, 122, 255, 0.3);
+            }
+            .btn-primary:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 32px rgba(0, 122, 255, 0.35);
+            }
+            .btn-primary:disabled {
+                opacity: 0.35;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+            .btn-download {
+                background: linear-gradient(135deg, #34c759, #30d158);
+                color: #fff;
+                box-shadow: 0 6px 24px rgba(52, 199, 89, 0.3);
+                display: none;
+            }
+            .btn-download:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 32px rgba(52, 199, 89, 0.35);
+            }
+            .status-area {
+                margin-top: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.7rem;
+                min-height: 2rem;
+            }
+            .status {
+                font-size: 0.88rem;
+                color: #8e8e93;
+                text-align: center;
+                font-family: "ABeeZee", sans-serif;
+            }
+            .status.error {
+                color: #ff3b30;
+            }
+            .status.success {
+                color: #34c759;
+            }
+            .spinner {
+                display: none;
+                width: 22px;
+                height: 22px;
+                border: 2.5px solid rgba(0, 122, 255, 0.12);
+                border-top-color: #007aff;
+                border-radius: 50%;
+                animation: spin 0.7s linear infinite;
+                flex-shrink: 0;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            .footer {
+                margin-top: 1.5rem;
+                font-size: 0.78rem;
+                color: #aeaeb2;
+                text-align: center;
+                font-family: "ABeeZee", sans-serif;
+            }
+            .footer a {
+                color: #007aff;
+                text-decoration: none;
+            }
+            .footer a:hover {
+                text-decoration: underline;
+            }
+            @media (max-width: 480px) {
+                body {
+                    padding: 1rem;
+                    justify-content: flex-start;
+                    padding-top: 2.5rem;
+                }
+                .card {
+                    padding: 1.5rem 1.25rem 1.25rem;
+                    border-radius: 24px;
+                }
+                .options {
+                    flex-direction: column;
+                    gap: 0.75rem;
+                    align-items: stretch;
+                }
+                .quality-group {
+                    min-width: unset;
+                }
+                .bg-blob-1 {
+                    width: 300px;
+                    height: 300px;
+                    top: -100px;
+                    right: -80px;
+                }
+                .bg-blob-2 {
+                    width: 250px;
+                    height: 250px;
+                }
+                .bg-blob-3 {
+                    width: 200px;
+                    height: 200px;
+                    left: -60px;
+                }
+                .bg-blob-4 {
+                    width: 200px;
+                    height: 200px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="bg-blob bg-blob-1"></div>
+        <div class="bg-blob bg-blob-2"></div>
+        <div class="bg-blob bg-blob-3"></div>
+        <div class="bg-blob bg-blob-4"></div>
+        <div class="noise"></div>
 
-            <div class="drop-zone" id="dropZone">
-                <span class="drop-icon" id="dropIcon">📁</span>
-                <div class="drop-text"><strong>Choose files</strong> or drag them here</div>
-                <div class="drop-hint">Only .HEIC files accepted</div>
-                <input type="file" id="fileInput" accept=".heic,.HEIC" multiple />
-            </div>
-
-            <ul class="file-list" id="fileList"></ul>
-
-            <div class="options">
-                <div class="quality-group">
-                    <label for="quality">Quality</label>
-                    <input type="range" id="quality" min="1" max="100" value="100" />
-                    <span class="quality-value" id="qualityValue">100</span>
+        <div class="container">
+            <div class="card">
+                <div class="header">
+                    <h1>HEIC to JPG</h1>
+                    <p class="subtitle">Convert iPhone photos in seconds</p>
                 </div>
-                <label class="strip-label">
-                    <input type="checkbox" id="strip" /> Strip metadata
-                </label>
+
+                <div class="drop-zone" id="dropZone">
+                    <span class="drop-icon" id="dropIcon">📁</span>
+                    <div class="drop-text">
+                        <strong>Choose files</strong> or drag them here
+                    </div>
+                    <div class="drop-hint">Only .HEIC files accepted</div>
+                    <input
+                        type="file"
+                        id="fileInput"
+                        accept=".heic,.HEIC"
+                        multiple
+                    />
+                </div>
+
+                <ul class="file-list" id="fileList"></ul>
+
+                <div class="options">
+                    <div class="quality-group">
+                        <label for="quality">Quality</label>
+                        <input
+                            type="range"
+                            id="quality"
+                            min="1"
+                            max="100"
+                            value="100"
+                        />
+                        <span class="quality-value" id="qualityValue">100</span>
+                    </div>
+                    <label class="strip-label">
+                        <input type="checkbox" id="strip" /> Strip metadata
+                    </label>
+                </div>
+
+                <button class="btn btn-primary" id="convertBtn" disabled>
+                    Convert to JPG
+                </button>
+
+                <div class="status-area">
+                    <div class="spinner" id="spinner"></div>
+                    <div class="status" id="status"></div>
+                </div>
+
+                <a class="btn btn-download" id="downloadLink">Download</a>
             </div>
 
-            <button class="btn btn-primary" id="convertBtn" disabled>Convert to JPG</button>
-
-            <div class="status-area">
-                <div class="spinner" id="spinner"></div>
-                <div class="status" id="status"></div>
+            <div class="footer">
+                Powered by
+                <a href="https://github.com/athomft/HEIC2JPG">heic2jpg</a>
             </div>
-
-            <a class="btn btn-download" id="downloadLink">Download</a>
         </div>
 
-        <div class="footer">Powered by <a href="https://github.com/athomft/HEIC2JPG">heic2jpg</a></div>
-    </div>
-
-    <script>
-        const fileInput = document.getElementById("fileInput");
-        const dropZone = document.getElementById("dropZone");
-        const dropIcon = document.getElementById("dropIcon");
-        const fileList = document.getElementById("fileList");
-        const convertBtn = document.getElementById("convertBtn");
-        const status = document.getElementById("status");
-        const spinner = document.getElementById("spinner");
-        const quality = document.getElementById("quality");
-        const qualityValue = document.getElementById("qualityValue");
-        const strip = document.getElementById("strip");
-        const downloadLink = document.getElementById("downloadLink");
-        let selectedFiles = [];
-        quality.addEventListener("input", function() { qualityValue.textContent = quality.value; });
-        function updateFileList() {
-            fileList.innerHTML = "";
-            selectedFiles.forEach(function(file, i) {
-                var li = document.createElement("li");
-                li.innerHTML = '<span class="file-name">' + file.name + '</span><span class="remove" data-idx="' + i + '">\u2715</span>';
-                li.querySelector(".remove").addEventListener("click", function() { selectedFiles.splice(i, 1); updateFileList(); });
-                fileList.appendChild(li);
+        <script>
+            const fileInput = document.getElementById("fileInput");
+            const dropZone = document.getElementById("dropZone");
+            const dropIcon = document.getElementById("dropIcon");
+            const fileList = document.getElementById("fileList");
+            const convertBtn = document.getElementById("convertBtn");
+            const status = document.getElementById("status");
+            const spinner = document.getElementById("spinner");
+            const quality = document.getElementById("quality");
+            const qualityValue = document.getElementById("qualityValue");
+            const strip = document.getElementById("strip");
+            const downloadLink = document.getElementById("downloadLink");
+            let selectedFiles = [];
+            quality.addEventListener("input", function () {
+                qualityValue.textContent = quality.value;
             });
-            dropZone.classList.toggle("has-files", selectedFiles.length > 0);
-            dropIcon.textContent = selectedFiles.length > 0 ? "\uD83D\uDCC4" : "\uD83D\uDCC1";
-            convertBtn.disabled = selectedFiles.length === 0;
-        }
-        function handleFiles(files) {
-            var heicFiles = Array.from(files).filter(function(f) { return f.name.toLowerCase().endsWith(".heic"); });
-            if (heicFiles.length === 0) { setStatus("Please select .HEIC files only", "error"); return; }
-            selectedFiles = heicFiles;
-            updateFileList();
-            setStatus(selectedFiles.length + " file" + (selectedFiles.length > 1 ? "s" : "") + " selected", "success");
-        }
-        fileInput.addEventListener("change", function(e) { handleFiles(e.target.files); fileInput.value = ""; });
-        dropZone.addEventListener("dragover", function(e) { e.preventDefault(); dropZone.classList.add("dragover"); });
-        dropZone.addEventListener("dragleave", function() { dropZone.classList.remove("dragover"); });
-        dropZone.addEventListener("drop", function(e) { e.preventDefault(); dropZone.classList.remove("dragover"); handleFiles(e.dataTransfer.files); });
-        function setStatus(msg, type) { status.textContent = msg; status.className = "status" + (type ? " " + type : ""); downloadLink.style.display = "none"; }
-        convertBtn.addEventListener("click", async function() {
-            if (selectedFiles.length === 0) return;
-            convertBtn.disabled = true; spinner.style.display = "block"; setStatus("Converting...");
-            try {
-                if (selectedFiles.length === 1) {
-                    var fd = new FormData();
-                    fd.append("file", selectedFiles[0]); fd.append("quality", quality.value); fd.append("strip", strip.checked ? "true" : "false");
-                    var resp = await fetch("/convert", { method: "POST", body: fd });
-                    if (!resp.ok) { var err = await resp.text(); throw new Error(err); }
-                    var blob = await resp.blob();
-                    var url = URL.createObjectURL(blob);
-                    downloadLink.href = url; downloadLink.download = selectedFiles[0].name.replace(/\.heic$/i, ".jpg");
-                    downloadLink.textContent = "Download JPG"; downloadLink.style.display = "block";
-                    setStatus("Conversion complete", "success");
-                } else {
-                    var fd = new FormData();
-                    for (var i = 0; i < selectedFiles.length; i++) { fd.append("files", selectedFiles[i]); }
-                    fd.append("quality", quality.value); fd.append("strip", strip.checked ? "true" : "false");
-                    var resp = await fetch("/convert/batch", { method: "POST", body: fd });
-                    if (!resp.ok) { var err = await resp.text(); throw new Error(err); }
-                    var blob = await resp.blob();
-                    var url = URL.createObjectURL(blob);
-                    downloadLink.href = url; downloadLink.download = "converted-images.zip";
-                    downloadLink.textContent = "Download ZIP"; downloadLink.style.display = "block";
-                    setStatus("Conversion complete", "success");
+            function updateFileList() {
+                fileList.innerHTML = "";
+                selectedFiles.forEach(function (file, i) {
+                    var li = document.createElement("li");
+                    li.innerHTML =
+                        '<span class="file-name">' +
+                        file.name +
+                        '</span><span class="remove" data-idx="' +
+                        i +
+                        '">\u2715</span>';
+                    li.querySelector(".remove").addEventListener(
+                        "click",
+                        function () {
+                            selectedFiles.splice(i, 1);
+                            updateFileList();
+                        },
+                    );
+                    fileList.appendChild(li);
+                });
+                dropZone.classList.toggle(
+                    "has-files",
+                    selectedFiles.length > 0,
+                );
+                dropIcon.textContent =
+                    selectedFiles.length > 0 ? "\uD83D\uDCC4" : "\uD83D\uDCC1";
+                convertBtn.disabled = selectedFiles.length === 0;
+            }
+            function handleFiles(files) {
+                var heicFiles = Array.from(files).filter(function (f) {
+                    return f.name.toLowerCase().endsWith(".heic");
+                });
+                if (heicFiles.length === 0) {
+                    setStatus("Please select .HEIC files only", "error");
+                    return;
                 }
-            } catch (err) { setStatus("Error: " + err.message, "error"); }
-            finally { convertBtn.disabled = false; spinner.style.display = "none"; }
-        });
-    </script>
-</body>
+                selectedFiles = heicFiles;
+                updateFileList();
+                setStatus(
+                    selectedFiles.length +
+                        " file" +
+                        (selectedFiles.length > 1 ? "s" : "") +
+                        " selected",
+                    "success",
+                );
+            }
+            fileInput.addEventListener("change", function (e) {
+                handleFiles(e.target.files);
+                fileInput.value = "";
+            });
+            dropZone.addEventListener("dragover", function (e) {
+                e.preventDefault();
+                dropZone.classList.add("dragover");
+            });
+            dropZone.addEventListener("dragleave", function () {
+                dropZone.classList.remove("dragover");
+            });
+            dropZone.addEventListener("drop", function (e) {
+                e.preventDefault();
+                dropZone.classList.remove("dragover");
+                handleFiles(e.dataTransfer.files);
+            });
+            function setStatus(msg, type) {
+                status.textContent = msg;
+                status.className = "status" + (type ? " " + type : "");
+                downloadLink.style.display = "none";
+            }
+            convertBtn.addEventListener("click", async function () {
+                if (selectedFiles.length === 0) return;
+                convertBtn.disabled = true;
+                spinner.style.display = "block";
+                setStatus("Converting...");
+                try {
+                    if (selectedFiles.length === 1) {
+                        var fd = new FormData();
+                        fd.append("file", selectedFiles[0]);
+                        fd.append("quality", quality.value);
+                        fd.append("strip", strip.checked ? "true" : "false");
+                        var resp = await fetch("/convert", {
+                            method: "POST",
+                            body: fd,
+                        });
+                        if (!resp.ok) {
+                            var err = await resp.text();
+                            throw new Error(err);
+                        }
+                        var blob = await resp.blob();
+                        var url = URL.createObjectURL(blob);
+                        downloadLink.href = url;
+                        downloadLink.download = selectedFiles[0].name.replace(
+                            /\.heic$/i,
+                            ".jpg",
+                        );
+                        downloadLink.textContent = "Download JPG";
+                        downloadLink.style.display = "block";
+                        setStatus("Conversion complete", "success");
+                    } else {
+                        var fd = new FormData();
+                        for (var i = 0; i < selectedFiles.length; i++) {
+                            fd.append("files", selectedFiles[i]);
+                        }
+                        fd.append("quality", quality.value);
+                        fd.append("strip", strip.checked ? "true" : "false");
+                        var resp = await fetch("/convert/batch", {
+                            method: "POST",
+                            body: fd,
+                        });
+                        if (!resp.ok) {
+                            var err = await resp.text();
+                            throw new Error(err);
+                        }
+                        var blob = await resp.blob();
+                        var url = URL.createObjectURL(blob);
+                        downloadLink.href = url;
+                        downloadLink.download = "converted-images.zip";
+                        downloadLink.textContent = "Download ZIP";
+                        downloadLink.style.display = "block";
+                        setStatus("Conversion complete", "success");
+                    }
+                } catch (err) {
+                    setStatus("Error: " + err.message, "error");
+                } finally {
+                    convertBtn.disabled = false;
+                    spinner.style.display = "none";
+                }
+            });
+        </script>
+    </body>
 </html>
