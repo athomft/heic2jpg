@@ -676,8 +676,8 @@
                             ".jpg",
                         );
                         downloadLink.textContent = "Download JPG";
-                        downloadLink.style.display = "block";
                         setStatus("Conversion complete", "success");
+                        downloadLink.style.display = "block";
                     } else {
                         var fd = new FormData();
                         for (var i = 0; i < selectedFiles.length; i++) {
@@ -698,8 +698,8 @@
                         downloadLink.href = url;
                         downloadLink.download = "converted-images.zip";
                         downloadLink.textContent = "Download ZIP";
-                        downloadLink.style.display = "block";
                         setStatus("Conversion complete", "success");
+                        downloadLink.style.display = "block";
                     }
                 } catch (err) {
                     setStatus("Error: " + err.message, "error");
