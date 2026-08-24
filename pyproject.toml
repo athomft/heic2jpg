@@ -5,22 +5,27 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "heic2jpg"
 version = "1.5.4"
-description = "Web tool to convert .HEIC images to .JPG"
+description = "HEIC to JPG converter utility and web app"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
 dependencies = [
     "Pillow>=10.0.0",
     "pillow-heif>=0.13.0",
-    "piexif>=1.1.3",
-    "fastapi>=0.100.0",
-    "uvicorn>=0.23.0",
-    "python-multipart>=0.0.6",
-    "slowapi>=0.1.9",
+]
+
+[project.scripts]
+heic2jpg = "converter:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
 ]
 
 [project.urls]
 Repository = "https://github.com/athomft/HEIC2JPG"
 
 [tool.setuptools]
-py-modules = ["converter", "web"]
+py-modules = ["converter"]
+
+

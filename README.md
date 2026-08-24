@@ -1,99 +1,72 @@
-# HEIC to JPG Converter
+# HEIC to JPG Converter 📸
 
-Web tool to convert `.HEIC` images to `.JPG` format through your browser. Supports drag-and-drop upload, quality adjustment, metadata stripping, single and batch conversion.
+A modern, fast, **100% private, client-side WebAssembly** web app designed with a native mobile-app interface to convert `.HEIC` / `.HEIF` images to `.JPG` format directly in your browser.
 
-## Quick Start
+> 🔒 **100% Private:** Photos are processed locally on your device via WebAssembly. Images never leave your phone or computer.
 
+---
+
+## 🚀 Deploy to Vercel (Instant 1-Click)
+
+This project is built for zero-maintenance, static edge deployment on **Vercel**:
+
+1. Push this repository to GitHub.
+2. Go to [vercel.com](https://vercel.com) and click **"Add New Project"**.
+3. Import this repository and click **Deploy**.
+4. That's it! Zero backend servers, zero database, zero hosting bills.
+
+Or with the Vercel CLI:
 ```bash
-pip install .
-uvicorn web:app --reload
+npx vercel
 ```
 
-Open **http://localhost:8000**.
+---
 
-Or simply:
-```bash
-python web.py
-```
+## ✨ Features
 
-## Features
+- **📱 Native Mobile-App UI:** Fixed-width smartphone canvas with iOS dynamic island, segmented quality controls, and thumb-friendly touch zones.
+- **⚡ Client-Side WebAssembly:** Uses `heic2any` to decode HEIC and encode JPEG directly on device with near-native performance.
+- **📦 Instant ZIP Downloads:** Generates multi-image `.zip` archives client-side via `JSZip` without server round-trips.
+- **🔒 Zero-Knowledge Privacy:** 100% offline-capable and on-device. No data or photos are ever uploaded to any server.
+- **⚙️ Custom Quality & EXIF Options:** Segmented presets (`75%`, `90%`, `100%`), fine-tune sliders, and EXIF strip toggle.
+- **💻 CLI Utility:** Includes Python CLI script (`converter.py`) for batch processing files on desktop machines.
 
-- Drag-and-drop file upload
-- Quality adjustment slider
-- Strip metadata option
-- Single file → direct JPG download
-- Multiple files → ZIP download
-- Real-time batch conversion progress
-- Automatic Swagger API docs at `/docs`
-- Rate limiting (10 req/min per IP)
-- File size limit (50 MB, configurable)
-- Conversion timeout (120s, configurable)
-- Health check endpoint (`/health`)
+---
 
-## Configuration
+## 🛠️ Local Development
 
-These environment variables can be set to customize behavior:
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `MAX_FILE_SIZE` | `52428800` (50 MB) | Maximum allowed file size in bytes |
-| `CONVERSION_TIMEOUT` | `120` | Maximum conversion time per file in seconds |
-
-Example:
-```bash
-MAX_FILE_SIZE=104857600 CONVERSION_TIMEOUT=300 uvicorn web:app --reload
-```
-
-## API Endpoints
-
-| Method | Path | Description |
-| :--- | :--- | :--- |
-| `GET` | `/health` | Health check |
-| `GET` | `/` | Web interface |
-| `POST` | `/convert` | Convert a single HEIC file |
-| `POST` | `/convert/batch` | Convert multiple HEIC files (returns ZIP) |
-| `GET` | `/docs` | Swagger API documentation |
-
-## Deployment
-
-### Railway (recommended)
-
-1. Push this repo to GitHub
-2. Go to [railway.app](https://railway.app) and create a new project
-3. Select **Deploy from GitHub repo**
-4. Railway auto-detects the Python project and runs `uvicorn web:app`
-5. Set the start command if needed:
-   ```
-   uvicorn web:app --host 0.0.0.0 --port $PORT --workers 4
-   ```
-
-### Fly.io
+Simply open `index.html` in any modern web browser or serve locally:
 
 ```bash
-fly launch
-fly deploy
+# Using Python
+python -m http.server 8000
+
+# Using Node / npx
+npx serve .
 ```
 
-### Docker
+Open **http://localhost:8000** in your browser or mobile phone.
+
+---
+
+## 🖥️ Command Line Interface (CLI)
+
+You can also convert images locally via Python CLI:
 
 ```bash
-docker build -t heic2jpg .
-docker run -p 8000:8000 heic2jpg
+# Convert a single file
+python converter.py photo.heic -o photo.jpg
+
+# Convert a directory of HEIC files
+python converter.py ./photos/ -o ./converted/ --quality 90
+
+# Strip metadata and keep original timestamps
+python converter.py ./photos/ --strip --keep-date
 ```
 
-### Cloudflare Tunnel (for personal use)
+---
 
-```bash
-uvicorn web:app --host 0.0.0.0 --port 8000
-cloudflared tunnel --url http://localhost:8000
-```
-
-## Troubleshooting
-
-- **"input buffer is not a HEIC image"**: The file isn't a valid `.heic` photo. Check that it's actually a HEIC image (usually from an iPhone).
-- **"File too large"**: Maximum file size is 50 MB. Resize or split your file.
-- **"Conversion timed out"**: The conversion took longer than 120 seconds. Try a smaller file.
-
-## License
+## 📄 License
 
 MIT
+
