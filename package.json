@@ -1,0 +1,9 @@
+{
+  "name": "heic2jpg",
+  "version": "1.5.4",
+  "private": true,
+  "description": "Modern HEIC to JPG Web Converter",
+  "scripts": {
+    "build": "echo 'Static build ready'"
+  }
+}
