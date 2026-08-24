@@ -1,11 +1,14 @@
 import os
+import sys
 import tempfile
 from pathlib import Path
 import pytest
 from PIL import Image, ImageOps
 import piexif
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from converter import process_file
+
 
 
 @pytest.fixture
@@ -91,11 +94,13 @@ def test_converter_cli(sample_heic, temp_dir):
     import subprocess
     import sys
     out_path = temp_dir / "cli_out.jpg"
+    converter_script = Path(__file__).parent.parent / "converter.py"
     proc = subprocess.run(
-        [sys.executable, "converter.py", sample_heic, "-o", str(out_path), "-q", "75"],
+        [sys.executable, str(converter_script), sample_heic, "-o", str(out_path), "-q", "75"],
         capture_output=True,
         text=True,
     )
     assert proc.returncode == 0
     assert out_path.exists()
+
 

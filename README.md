@@ -55,14 +55,15 @@ You can also convert images locally via Python CLI:
 
 ```bash
 # Convert a single file
-python converter.py photo.heic -o photo.jpg
+python cli/converter.py photo.heic -o photo.jpg
 
 # Convert a directory of HEIC files
-python converter.py ./photos/ -o ./converted/ --quality 90
+python cli/converter.py ./photos/ -o ./converted/ --quality 90
 
 # Strip metadata and keep original timestamps
-python converter.py ./photos/ --strip --keep-date
+python cli/converter.py ./photos/ --strip --keep-date
 ```
+
 
 ---
 
